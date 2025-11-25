@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - They must be sampled at 44,100 Hz
   - They cannot be played from a Connect device using the dedicated 'Local Files' playlist; they must be added to another playlist first
 - [playback] `local_file_directories` field added to `PlayerConfig` struct (breaking)
+- [oauth] Add `open_callback` method to `OAuthClientBuilder` to allow custom URL opening behavior
 
 ### Changed
 

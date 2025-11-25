@@ -225,7 +225,7 @@ fn get_socket_address(redirect_uri: &str) -> Option<SocketAddr> {
 pub struct OAuthClient {
     scopes: Vec<String>,
     redirect_uri: String,
-    should_open_url: bool,
+    open_callback: Option<fn(&str)>,
     message: String,
     client: BasicClient<EndpointSet, EndpointNotSet, EndpointNotSet, EndpointNotSet, EndpointSet>,
 }
@@ -247,9 +247,10 @@ impl OAuthClient {
             .set_pkce_challenge(pkce_challenge)
             .url();
 
-        if self.should_open_url {
-            open::that_in_background(auth_url.as_str());
+        if let Some(open_callback) = self.open_callback {
+            open_callback(auth_url.as_str());
         }
+
         println!("Browse to: {auth_url}");
 
         pkce_verifier
@@ -365,7 +366,7 @@ pub struct OAuthClientBuilder {
     client_id: String,
     redirect_uri: String,
     scopes: Vec<String>,
-    should_open_url: bool,
+    open_callback: Option<fn(&str)>,
     message: String,
 }
 
@@ -378,7 +379,7 @@ impl OAuthClientBuilder {
             client_id: client_id.to_string(),
             redirect_uri: redirect_uri.to_string(),
             scopes: scopes.into_iter().map(Into::into).collect(),
-            should_open_url: false,
+            open_callback: None,
             message: String::from("Go back to your terminal :)"),
         }
     }
@@ -386,7 +387,16 @@ impl OAuthClientBuilder {
     /// When this function is added to the building process pipeline, the auth url will be
     /// opened with the default web browser. Otherwise, it will be printed to standard output.
     pub fn open_in_browser(mut self) -> Self {
-        self.should_open_url = true;
+        self.open_callback = Some(|url: &str| {
+            open::that_in_background(url);
+        });
+        self
+    }
+
+    /// When this function is added to the building process pipeline, the auth url will be
+    /// opened with the provided callback function.
+    pub fn open_callback(mut self, callback: fn(&str)) -> Self {
+        self.open_callback = Some(callback);
         self
     }
 
@@ -417,7 +427,7 @@ impl OAuthClientBuilder {
 
         Ok(OAuthClient {
             scopes: self.scopes,
-            should_open_url: self.should_open_url,
+            open_callback: self.open_callback,
             message: self.message,
             redirect_uri: self.redirect_uri,
             client,
